@@ -319,6 +319,7 @@ async function main() {
       display: flex;
       align-items: center;
       padding: 5px 0;
+      justify-content: center;
   }
   
   .category-header:hover .header-text {
@@ -334,6 +335,8 @@ async function main() {
       border-top: 8px solid #444;
       margin-right: 8px;
       transition: transform 0.2s ease;
+      position: absolute;
+      left: 10px;
   }
   
   .category-toggle.collapsed {
@@ -528,7 +531,7 @@ async function main() {
             <div class="line">
                 <div class="category-header" data-category="pirulay">
                     <span class="category-toggle"></span>
-                    <p class="header-text fw-bold">Pirulay</p>
+                    <p class="header-text fw-bold text-center">Pirulay</p>
                 </div>
             </div>
             <div class="category-content" id="pirulay-category">
@@ -546,7 +549,7 @@ async function main() {
             <div class="line">
                 <div class="category-header" data-category="privacidade">
                     <span class="category-toggle"></span>
-                    <p class="header-text fw-bold">Privacidade</p>
+                    <p class="header-text fw-bold text-center">Privacidade</p>
                 </div>
             </div>
             <div class="category-content" id="privacidade-category">
@@ -564,7 +567,7 @@ async function main() {
             <div class="line">
                 <div class="category-header" data-category="utilidades">
                     <span class="category-toggle"></span>
-                    <p class="header-text fw-bold">Utilitários / Performance</p>
+                    <p class="header-text fw-bold text-center">Utilitários / Performance</p>
                 </div>
             </div>
             <div class="category-content" id="utilidades-category">
@@ -621,7 +624,7 @@ async function main() {
             <div class="line">
                 <div class="category-header" data-category="xarurave">
                     <span class="category-toggle"></span>
-                    <p class="header-text fw-bold">XaruRave</p>
+                    <p class="header-text fw-bold text-center">XaruRave</p>
                 </div>
             </div>
             <div class="category-content" id="xarurave-category">
@@ -755,7 +758,7 @@ async function main() {
         const categoryContent = document.getElementById(`${categoryName}-category`);
         const toggleIcon = header.querySelector('.category-toggle');
         
-        // Verificar estado inicial (todas expandidas por padrão)
+        // Inicializa todas as categorias como expandidas (padrão)
         const isCollapsed = localStorage.getItem(`xaru_category_${categoryName}`) === 'collapsed';
         
         if (isCollapsed) {
@@ -1020,67 +1023,14 @@ async function main() {
                 billAbortController = new AbortController();
                 isBillActive = true;
                 
+                // Função simplificada para enviar movimento - somente o formato que funciona
                 const moveToPosition = (x, y) => {
                     try {
-                        // Analise mais detalhada do pacote de movimento
-                        console.log(`[Bill Moves DEBUG] Tentando enviar movimento para: ${x},${y}`);
-                        
-                        // Tente diferentes formatos de pacote - o Habbo pode esperar diferentes formatos
-                        
-                        // Formato 1: Padrão com C(x), C(y)
-                        const writer1 = new BinaryWriter(3320);
-                        writer1.C(x);
-                        writer1.C(y);
-                        const buffer1 = writer1.K();
-                        console.log(`[Bill Moves DEBUG] Enviando pacote formato 1`);
-                        window.ne.bind(window.t)(buffer1);
-                        
-                        // Aguarde um momento antes de tentar o próximo formato
-                        setTimeout(() => {
-                            try {
-                                // Formato 2: Usando números curtos (q) em vez de inteiros completos
-                                const writer2 = new BinaryWriter(3320);
-                                writer2.q(x);
-                                writer2.q(y);
-                                const buffer2 = writer2.K();
-                                console.log(`[Bill Moves DEBUG] Enviando pacote formato 2`);
-                                window.ne.bind(window.t)(buffer2);
-                            } catch (e) {
-                                console.error("Erro no formato 2:", e);
-                            }
-                        }, 100);
-                        
-                        // Tente também com um OPCODE ligeiramente diferente
-                        setTimeout(() => {
-                            try {
-                                // Formato 3: Usando o OPCODE 3321 (próximo ao identificado)
-                                const writer3 = new BinaryWriter(3321);
-                                writer3.C(x);
-                                writer3.C(y);
-                                const buffer3 = writer3.K();
-                                console.log(`[Bill Moves DEBUG] Enviando pacote formato 3`);
-                                window.ne.bind(window.t)(buffer3);
-                            } catch (e) {
-                                console.error("Erro no formato 3:", e);
-                            }
-                        }, 200);
-                        
-                        // Tente o formato que vimos em uso pelo Enables (formato 1314)
-                        setTimeout(() => {
-                            try {
-                                // Formato 4: Usando a função I (string) seguida de C
-                                const writer4 = new BinaryWriter(3320);
-                                writer4.I(x.toString());
-                                writer4.I(y.toString());
-                                const buffer4 = writer4.K();
-                                console.log(`[Bill Moves DEBUG] Enviando pacote formato 4`);
-                                window.ne.bind(window.t)(buffer4);
-                            } catch (e) {
-                                console.error("Erro no formato 4:", e);
-                            }
-                        }, 300);
-                        
-                        console.log(`[Bill Moves] Movimento enviado para: ${x},${y}`);
+                        const writer = new BinaryWriter(3320);
+                        writer.C(x);
+                        writer.C(y);
+                        const buffer = writer.K();
+                        window.ne.bind(window.t)(buffer);
                         return true;
                     } catch (err) {
                         console.error("[Bill Moves] Erro ao mover:", err);
@@ -1088,67 +1038,51 @@ async function main() {
                     }
                 };
                 
-                // Função para obter uma posição aleatória próxima, mas não uma direção específica
-                const getRandomNearbyPosition = (currentX, currentY, initialX, initialY, maxDistance) => {
-                    let attempts = 0;
-                    const maxAttempts = 10;
+                // Configuração para movimento mais rápido e caótico
+                const maxDistance = 4;  // Aumentado para permitir movimentos mais amplos
+                const minDelay = 20;    // Reduzido drasticamente para movimento muito rápido
+                const maxDelay = 80;    // Também reduzido para maior velocidade
+                
+                // Função para obter uma posição aleatória para movimento caótico
+                const getRandomPosition = () => {
+                    // Movimento completamente aleatório em uma área maior
+                    const offsetX = Math.floor(Math.random() * (maxDistance * 2 + 1)) - maxDistance;
+                    const offsetY = Math.floor(Math.random() * (maxDistance * 2 + 1)) - maxDistance;
                     
-                    while (attempts < maxAttempts) {
-                        attempts++;
-                        
-                        // Gere um deslocamento aleatório dentro dos limites
-                        const offsetX = Math.floor(Math.random() * (maxDistance * 2 + 1)) - maxDistance;
-                        const offsetY = Math.floor(Math.random() * (maxDistance * 2 + 1)) - maxDistance;
-                        
-                        // Calcule a nova posição
-                        const newX = initialX + offsetX;
-                        const newY = initialY + offsetY;
-                        
-                        // Verifique se a nova posição está dentro dos limites
-                        if (Math.abs(newX - initialX) <= maxDistance && 
-                            Math.abs(newY - initialY) <= maxDistance &&
-                            !(newX === currentX && newY === currentY)) { // Evite ficar no mesmo lugar
-                            return { x: newX, y: newY };
-                        }
-                    }
-                    
-                    // Se não conseguir encontrar uma posição válida, retorne à posição inicial
-                    return { x: initialX, y: initialY };
+                    return { 
+                        x: initialX + offsetX, 
+                        y: initialY + offsetY 
+                    };
                 };
                 
-                // Função simplificada para o movimento
+                // Loop de movimento caótico e muito rápido
                 const billMove = async () => {
                     if (!controls.billToggle.checked || billAbortController.signal.aborted) {
-                        console.log("[Bill Moves] Movimento interrompido");
                         return;
                     }
                     
-                    // Obtenha uma nova posição aleatória
-                    const newPosition = getRandomNearbyPosition(currentX, currentY, initialX, initialY, 2);
-                    
-                    // Atualize a posição atual
+                    // Obtenha uma posição completamente aleatória
+                    const newPosition = getRandomPosition();
                     currentX = newPosition.x;
                     currentY = newPosition.y;
                     
-                    console.log(`[Bill Moves] Nova posição: ${currentX}, ${currentY}`);
-                    
-                    // Envie o comando de movimento
+                    // Envie o movimento imediatamente
                     moveToPosition(currentX, currentY);
                     
-                    // Aguarde um tempo aleatório
-                    const randomDelay = Math.floor(Math.random() * 300) + 450;
-                    console.log(`[Bill Moves] Aguardando ${randomDelay}ms para o próximo movimento`);
-                    await sleep(randomDelay);
+                    // Aguarde um intervalo muito curto (movimento frenético)
+                    const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay)) + minDelay;
                     
-                    // Continue apenas se o toggle ainda estiver ativo
+                    // Continue apenas se o toggle ainda estiver ativo (usando setTimeout para evitar bloqueio)
                     if (controls.billToggle.checked && !billAbortController.signal.aborted) {
-                        setTimeout(billMove, 150);
+                        setTimeout(billMove, randomDelay);
                     }
                 };
                 
-                // Inicie o movimento
-                console.log("[Bill Moves] Iniciando movimentos aleatórios");
-                billMove();
+                // Inicie múltiplos movimentos em paralelo para parecer mais caótico
+                console.log("[Bill Moves] Iniciando movimentos caóticos");
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(billMove, i * 10); // Iniciar 3 loops de movimento ligeiramente deslocados
+                }
                 
             } catch (error) {
                 console.error("[Bill Moves] Erro fatal:", error);
